@@ -14,23 +14,15 @@
     </div>
     <script type="text/babel">
 
-      class ToggleOn extends React.Component {
-        render () {
-          return this.props.on ? <p className='on'>{this.props.children}</p> : null
-        }
-      }
+      const ToggleOn = ({on, children}) => on
+        ? <p className='on'>{children}</p>
+        : null
 
-      class ToggleOff extends React.Component {
-        render () {
-          return this.props.on === false ? <p className='off'>{this.props.children}</p> : null
-        }
-      }
+      const ToggleOff = ({on, children}) => on === false
+        ? <p className='off'>{children}</p>
+        : null
 
-      class ToggleButton extends React.Component {
-        render () {
-          return <Switch on={this.props.on} onClick={this.props.toggle} />
-        }
-      }
+      const ToggleButton = ({on, toggle, ...props}) => <Switch {...{onClick: toggle, on, ...props}} />
 
       class Toggle extends React.Component {
         static defaultProps = { onToggle: () => {} }
@@ -43,11 +35,14 @@
           () => this.props.onToggle(this.state.on)
         )
         render = () => {
-          return <div>
-            {React.Children.map(this.props.children, (child) => {
-              return React.cloneElement(child, {on: this.state.on, toggle: this.toggle})
-            })}
-          </div>
+          const children = React.Children.map(
+            this.props.children,
+            child => React.cloneElement(child, {
+              on: this.state.on,
+              toggle: this.toggle
+            })
+          )
+          return <div>{children}</div>
         }
       }
 
