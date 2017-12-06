@@ -14,17 +14,52 @@
 		</div>
 		<script type="text/babel">
 
+			class ToggleOn extends React.Component {
+				render () {
+					return this.props.on ? <p className='on'>{this.props.children}</p> : null
+				}
+			}
+
+			class ToggleOff extends React.Component {
+				render () {
+					return this.props.on === false ? <p className='off'>{this.props.children}</p> : null
+				}
+			}
+
+			class ToggleButton extends React.Component {
+				render () {
+					return <Switch on={this.props.on} onClick={this.props.toggle} />
+				}
+			}
+
 			class Toggle extends React.Component {
 				static defaultProps = { onToggle: () => {} }
+				static On = ToggleOn
+				static Off = ToggleOff
+				static Button = ToggleButton
 				state = { on: false }
 				toggle = () => this.setState(
 					({on}) => ({on: !on}),
 					() => this.props.onToggle(this.state.on)
 				)
-				render = () => <Switch on={this.state.on} onClick={this.toggle} />
+				render = () => {
+					return <div>
+						{React.Children.map(this.props.children, (child) => {
+							return React.cloneElement(child, {on: this.state.on, toggle: this.toggle})
+						})}
+					</div>
+				}
 			}
 
-			const App = () => <Toggle onToggle={() => { console.log('toggling') }} />
+			const App = () => {
+				return (
+					<Toggle onToggle={() => { console.log('toggling') }} >
+						<Toggle.Button />
+						<Toggle.Off>OFF</Toggle.Off>
+						<Toggle.On>ON</Toggle.On>
+					</Toggle>
+				)
+			}
 
 			const Switch = ({on, ...props}) =>
 				<div className={`switch ${on ? 'on' : 'off'}`} {...props} />
