@@ -1,0 +1,35 @@
+<html>
+	<style>
+	.switch { width: 100px; height: 100px; }
+	.on { background-color: green; }
+	.off { background-color: red; }
+	</style>
+	<head>
+		<script src="https://unpkg.com/react@16.0.0/umd/react.development.js"></script>
+		<script src="https://unpkg.com/react-dom@16.0.0/umd/react-dom.development.js"></script>
+		<script src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
+	</head>
+	<body>
+		<div id='root'>
+		</div>
+		<script type="text/babel">
+
+			class Toggle extends React.Component {
+				static defaultProps = { onToggle: () => {} }
+				state = { on: false }
+				toggle = () => this.setState(
+					({on}) => ({on: !on}),
+					() => this.props.onToggle(this.state.on)
+				)
+				render = () => <Switch on={this.state.on} onClick={this.toggle} />
+			}
+
+			const App = () => <Toggle onToggle={() => { console.log('toggling') }} />
+
+			const Switch = ({on, ...props}) =>
+				<div className={`switch ${on ? 'on' : 'off'}`} {...props} />
+
+			ReactDOM.render(<App />, document.getElementById('root'))
+		</script>
+	</body>
+</html>
