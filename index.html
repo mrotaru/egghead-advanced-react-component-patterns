@@ -30,6 +30,7 @@
           [TOGGLE_CONTEXT]: PropTypes.object.isRequired,
         j}
         Wrapper.displayName = `withToggle(${Component.displayName || Component.name})`
+        Wrapper.wrappedComponent = Component
         return Wrapper
       }
 
