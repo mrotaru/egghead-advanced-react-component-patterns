@@ -18,13 +18,17 @@
       const TOGGLE_CONTEXT = '__toggle__'
 
       const withToggle = (Component) => {
-        const Wrapper = (props, context) => {
+        const Wrapper = ({ innerRef, ...props }, context) => {
           const toggleContext = context[TOGGLE_CONTEXT]
-          return <Component {...props} toggle={toggleContext} />
+          return <Component
+            {...props}
+            ref={innerRef}
+            toggle={toggleContext}
+          />
         }
         Wrapper.contextTypes = {
           [TOGGLE_CONTEXT]: PropTypes.object.isRequired,
-        }
+        j}
         Wrapper.displayName = `withToggle(${Component.displayName || Component.name})`
         return Wrapper
       }
@@ -33,11 +37,16 @@
       const ToggleOn = ({ toggle: {on}, children }) => on ? <p className='on'>{children}</p> : null
       const ToggleOff = ({ toggle: {on}, children }) => !on ? <p className='off'>{children}</p> : null
       const ToggleButton2 = withToggle(({ toggle: {on, toggle }}) => <button onClick={toggle}>{on ? 'on' : 'off'}</button>)
-      const EventComponent = ({ on, event, toggle }) => {
-        const props = { [event]: on }
-        return toggle.on
-          ? (<button {...props}>The {event} event</button>)
-          : null
+
+      class EventComponent extends React.Component {
+        focus = () => this.button.focus()
+        render () {
+          let { event, on, toggle } = this.props
+          const props = { [event]: on }
+          return toggle.on
+            ? (<button {...props} ref={btn => (this.button = btn)}>The {event} event</button>)
+            : null
+        }
       }
 
       class Toggle extends React.Component {
@@ -58,25 +67,29 @@
         state = { on: false }
         toggle = () => this.setState(
           ({on}) => ({on: !on}),
-          () => this.props.onToggle(this.state.on)
+          () => {
+            this.props.onToggle(this.state.on)
+          }
         )
         render = () => {
           return <div>{this.props.children}</div>
         }
       }
 
-      const App = () => {
-        return (
-          <Toggle onToggle={() => { console.log('toggling') }} >
-            <Toggle.Button />
-            <div style={{padding: '20px', backgroundColor: 'gray'}}>
-              <Toggle.Off>OFF</Toggle.Off>
-              <Toggle.On>ON</Toggle.On>
-            </div>
-            <ToggleButton2 on='click'/>
-            <Toggle.MyEventComponent event='onClick' on={(e) => alert('event!')} />
-          </Toggle>
-        )
+      class App extends React.Component {
+        render () {
+          return (
+            <Toggle onToggle={(on) => { on && this.comp.focus()}} >
+              <Toggle.Button />
+              <div style={{padding: '20px', backgroundColor: 'gray'}}>
+                <Toggle.Off>OFF</Toggle.Off>
+                <Toggle.On>ON</Toggle.On>
+              </div>
+              <ToggleButton2 on='click'/>
+              <Toggle.MyEventComponent innerRef={comp => (this.comp = comp)} event='onClick' on={(e) => alert('event!')} />
+            </Toggle>
+          )
+        }
       }
 
       const Switch = ({on, ...props}) =>
