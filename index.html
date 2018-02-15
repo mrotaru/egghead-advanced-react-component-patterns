@@ -16,7 +16,15 @@
     <div id='root'>
     </div>
     <script type="text/babel">
-      const renderSwitch = ({on, toggle }) => <Switch {...{on, onClick: toggle}} />
+
+      /**
+        Issues with HOCs
+        - have to wrap everything
+        - potential naming collisions
+        - can be difficult to tell where props come from
+        - typing with TypeScript or flow
+        - composition is static
+      */
 
       class Toggle extends React.Component {
         static defaultProps = { onToggle: () => {} }
@@ -28,7 +36,7 @@
           }
         )
         render = () => {
-          return this.props.renderSwitch({
+          return this.props.render({
             on: this.state.on,
             toggle: this.toggle,
           })
@@ -40,7 +48,12 @@
           return (
             <Toggle
               onToggle={on => console.log('toggle', on)}
-              renderSwitch={renderSwitch}
+              render={({ on, toggle }) => (
+                <div>
+                  <Switch {...{on, onClick: toggle}} />
+                  {on ? 'on' : 'off'}
+                </div>
+              )}
             />
           )
         }
