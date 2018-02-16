@@ -16,6 +16,7 @@
     <div id='root'>
     </div>
     <script type="text/babel">
+      const compose = (...fns) => (...args) => fns.forEach(fn => fn && fn(...args))
 
       class Toggle extends React.Component {
         static defaultProps = { onToggle: () => {} }
@@ -26,14 +27,16 @@
             this.props.onToggle(this.state.on)
           }
         )
+        getTogglerProps = ({ onClick, ...props} = {}) => ({
+            'aria-expanded': this.state.on,
+            onClick: compose(onClick, this.toggle),
+            ...props,
+          })
         render = () => {
           return this.props.render({
             on: this.state.on,
             toggle: this.toggle,
-            togglerProps: {
-              'aria-expanded': this.state.on,
-              onClick: this.toggle,
-            }
+            getTogglerProps: this.getTogglerProps,
           })
         }
       }
@@ -43,12 +46,16 @@
           return (
             <Toggle
               onToggle={on => console.log('toggle', on)}
-              render={({ on, toggle, togglerProps }) => (
+              render={({ on, toggle, getTogglerProps }) => (
                 <div>
-                  <Switch {...{on, onClick: toggle, ...togglerProps}} />
+                  <Switch {...{on, onClick: toggle, ...getTogglerProps()}} />
                   {on ? 'on' : 'off'}
                   <p>
-                    <button {...togglerProps}>Foobar</button>
+                    <button
+                      { ...getTogglerProps({
+                        onClick:() => alert('hi')
+                      })}
+                    >Foobar</button>
                   </p>
                 </div>
               )}
