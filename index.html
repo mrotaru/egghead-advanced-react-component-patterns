@@ -17,15 +17,6 @@
     </div>
     <script type="text/babel">
 
-      /**
-        Issues with HOCs
-        - have to wrap everything
-        - potential naming collisions
-        - can be difficult to tell where props come from
-        - typing with TypeScript or flow
-        - composition is static
-      */
-
       class Toggle extends React.Component {
         static defaultProps = { onToggle: () => {} }
         state = { on: false }
@@ -39,6 +30,10 @@
           return this.props.render({
             on: this.state.on,
             toggle: this.toggle,
+            togglerProps: {
+              'aria-expanded': this.state.on,
+              onClick: this.toggle,
+            }
           })
         }
       }
@@ -48,10 +43,13 @@
           return (
             <Toggle
               onToggle={on => console.log('toggle', on)}
-              render={({ on, toggle }) => (
+              render={({ on, toggle, togglerProps }) => (
                 <div>
-                  <Switch {...{on, onClick: toggle}} />
+                  <Switch {...{on, onClick: toggle, ...togglerProps}} />
                   {on ? 'on' : 'off'}
+                  <p>
+                    <button {...togglerProps}>Foobar</button>
+                  </p>
                 </div>
               )}
             />
