@@ -19,14 +19,26 @@
       const compose = (...fns) => (...args) => fns.forEach(fn => fn && fn(...args))
 
       class Toggle extends React.Component {
-        static defaultProps = { onToggle: () => {} }
-        state = { on: false }
+        static defaultProps = {
+          defaultOn: false,
+          onReset: () => {},
+          onToggle: () => {}
+        }
+        initialState = {
+          on: this.props.defaultOn
+        }
+        state = this.initialState
         toggle = () => this.setState(
           ({on}) => ({on: !on}),
           () => {
             this.props.onToggle(this.state.on)
           }
         )
+        reset = () => {
+          this.setState(this.initialState, () => {
+            this.props.onReset(this.state.on)
+          })
+        }
         getTogglerProps = ({ onClick, ...props} = {}) => ({
             'aria-expanded': this.state.on,
             onClick: compose(onClick, this.toggle),
@@ -36,6 +48,7 @@
           return this.props.render({
             on: this.state.on,
             toggle: this.toggle,
+            reset: this.reset,
             getTogglerProps: this.getTogglerProps,
           })
         }
@@ -46,16 +59,15 @@
           return (
             <Toggle
               onToggle={on => console.log('toggle', on)}
-              render={({ on, toggle, getTogglerProps }) => (
+              onReset={on => console.log('reset', on)}
+              defaultOn={true}
+              render={({ on, toggle, reset, getTogglerProps }) => (
                 <div>
                   <Switch {...{on, onClick: toggle, ...getTogglerProps()}} />
                   {on ? 'on' : 'off'}
                   <p>
-                    <button
-                      { ...getTogglerProps({
-                        onClick:() => alert('hi')
-                      })}
-                    >Foobar</button>
+                    <button { ...{ onClick:() => reset() }}
+                    >Reset</button>
                   </p>
                 </div>
               )}
