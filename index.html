@@ -28,17 +28,28 @@
           on: this.props.defaultOn
         }
         state = this.initialState
-        toggle = () => this.setState(
-          ({on}) => ({on: !on}),
-          () => {
-            this.props.onToggle(this.state.on)
+        toggle = () => {
+          if (this.isOnControlled()) {
+            this.props.onToggle(!this.props.on)
+          } else {
+            this.setState(
+              ({on}) => ({ on: !on }),
+              () => {
+                this.props.onToggle(this.state.on)
+              }
+            )
           }
-        )
-        reset = () => {
-          this.setState(this.initialState, () => {
-            this.props.onReset(this.state.on)
-          })
         }
+        reset = () => {
+          if (this.isOnControlled()) {
+            this.props.onReset(!this.props.on)
+          } else {
+            this.setState(this.initialState, () => {
+              this.props.onReset(this.state.on)
+            })
+          }
+        }
+        isOnControlled = () => this.props.on !== undefined
         getTogglerProps = ({ onClick, ...props} = {}) => ({
             'aria-expanded': this.state.on,
             onClick: compose(onClick, this.toggle),
@@ -46,7 +57,7 @@
           })
         render = () => {
           return this.props.render({
-            on: this.state.on,
+            on: this.isOnControlled() ? this.props.on : this.state.on,
             toggle: this.toggle,
             reset: this.reset,
             getTogglerProps: this.getTogglerProps,
@@ -55,18 +66,35 @@
       }
 
       class App extends React.Component {
+        initialState = {
+          timesClicked: 0,
+          on: true
+        }
+        state = this.initialState
+        handleToggle = () => {
+          this.setState(({on, timesClicked}) => ({
+            timesClicked: timesClicked + 1,
+            on: timesClicked >= 4 ? on : !on,
+          }))
+        }
+        handleReset = (on) => {
+          this.setState(this.initialState)
+        }
         render () {
+          const { timesClicked, on } = this.state
           return (
             <Toggle
-              onToggle={on => console.log('toggle', on)}
-              onReset={on => console.log('reset', on)}
+              on={on}
+              onToggle={this.handleToggle}
+              onReset={this.handleReset}
               defaultOn={true}
-              render={({ on, toggle, reset, getTogglerProps }) => (
+              render={toggle => (
                 <div>
-                  <Switch {...{on, onClick: toggle, ...getTogglerProps()}} />
-                  {on ? 'on' : 'off'}
+                  <Switch {...toggle.getTogglerProps({ on: toggle.on }) } />
+                  <p>{toggle.on ? 'on' : 'off'}</p>
+                  <p>{timesClicked >= 4 ? 'clicked too much !' : timesClicked}</p>
                   <p>
-                    <button { ...{ onClick:() => reset() }}
+                    <button { ...{ onClick:() => toggle.reset() }}
                     >Reset</button>
                   </p>
                 </div>
