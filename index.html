@@ -97,11 +97,10 @@
       }
 
       const withToggle = (Component) => {
-        const Wrapper = ({innerRef, ...props}) => {
-          return <ToggleContextConsumer render={toggle => {
-            return <Component toggle={toggle} {...props} ref={innerRef} />
-          }} />
-        }
+        const Wrapper = ({innerRef, ...props}) =>
+          <ToggleContextConsumer render={toggle =>
+            <Component toggle={toggle} {...props} ref={innerRef} />
+          } />
         Wrapper.propTypes = { innerRef: PropTypes.func }
         Wrapper.displayName = `withToggle${Component.displayName || Component.name}`
         Wrapper.WrappedComponent = Component
@@ -117,13 +116,11 @@
       })
 
       class C2 extends React.Component {
-        render () {
-          return <div className='container'>
+        render = () => <div className='container'>
             <ToggleContextConsumer render={({on}) => {
               return on ? 'ON' : 'OFF'
             }} />
           </div>
-        }
       }
 
       class App extends React.Component {
