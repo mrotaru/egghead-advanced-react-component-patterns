@@ -11,6 +11,7 @@
     <script src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
     <script src="https://unpkg.com/prop-types@15.6.0/prop-types.js"></script>
     <script src="https://unpkg.com/prop-types@15.6.0/prop-types.js"></script>
+    <script src="https://unpkg.com/react-broadcast@0.5.2/umd/react-broadcast.js"></script>
     <script src="https://cdn.rawgit.com/kentcdodds/ea2fdfc82f79228a6be641c78dc0e1b9/raw/0f792eb8dfb3bf993bdf50c9656f12090ed344e6/hoist-non-react-statics.umd.js"></script>
   </head>
   <body>
@@ -67,33 +68,21 @@
       }
 
       class ToggleContextProvider extends React.Component {
-        static contextName = '__toggle__'
-        static Renderer = class extends React.Component {
-          static childContextTypes = {
-            [ToggleContextProvider.contextName]: PropTypes.object.isRequired,
-          }
-          getChildContext() {
-            return {
-              [ToggleContextProvider.contextName]: this.props.toggle
-            }
-          }
-          render () {
-            return this.props.children
-          }
-        }
+        static channel = '__toggle__'
         render = () => {
           const { children, ...remainingProps } = this.props
           return <Toggle {...remainingProps} render={toggle => (
-            <ToggleContextProvider.Renderer toggle={toggle} children={children}/>
+            <ReactBroadcast.Broadcast channel={ToggleContextProvider.channel} value={toggle}>
+              {children}
+            </ReactBroadcast.Broadcast>
           )} />
         }
       }
 
       function ToggleContextConsumer (props, context) {
-        return props.render(context[ToggleContextProvider.contextName])
-      }
-      ToggleContextConsumer.contextTypes = {
-        [ToggleContextProvider.contextName]: PropTypes.object.isRequired,
+        return <ReactBroadcast.Subscriber channel={ToggleContextProvider.channel}>
+          {toggle => props.render(toggle)}
+        </ReactBroadcast.Subscriber>
       }
 
       const withToggle = (Component) => {
@@ -115,6 +104,15 @@
         )
       })
 
+      class UpdateBlocker extends React.Component {
+        shouldComponentUpdate () {
+          return false
+        }
+        render () {
+          return this.props.children
+        }
+      }
+
       class C2 extends React.Component {
         render = () => <div className='container'>
             <ToggleContextConsumer render={({on}) => {
@@ -127,8 +125,12 @@
         render () {
           return (
             <ToggleContextProvider>
-              <C1 />
-              <C2 />
+              <div>
+                <C1 />
+                <UpdateBlocker>
+                  <C2 />
+                </UpdateBlocker>
+              </div>
             </ToggleContextProvider>
           )
         }
