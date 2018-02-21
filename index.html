@@ -68,37 +68,32 @@
 
       class ToggleContextProvider extends React.Component {
         static contextName = '__toggle__'
-        state = { on: true }
-        getChildContext = () => {
-          return {
-            [ToggleContextProvider.contextName]: {
-              on: this.state.on,
-              onToggle: this.handleToggle,
+        static Renderer = class extends React.Component {
+          static childContextTypes = {
+            [ToggleContextProvider.contextName]: PropTypes.object.isRequired,
+          }
+          getChildContext() {
+            return {
+              [ToggleContextProvider.contextName]: this.props.toggle
             }
           }
-        }
-        handleToggle = () => {
-          this.setState(({on}) => {
-            return { on: !on }
-          })
-        }
-        static Renderer = ({ toggle, render }) => {
-          return <Toggle {...toggle} render={render} />
+          render () {
+            return this.props.children
+          }
         }
         render = () => {
-          return this.props.children
+          const { children, ...remainingProps } = this.props
+          return <Toggle {...remainingProps} render={toggle => (
+            <ToggleContextProvider.Renderer toggle={toggle} children={children}/>
+          )} />
         }
       }
-      ToggleContextProvider.childContextTypes = {
-        [ToggleContextProvider.contextName]: PropTypes.object,
-      }
 
-      function ToggleContextConsumer ({ render }, context) {
-        const toggle = context[ToggleContextProvider.contextName]
-        return <ToggleContextProvider.Renderer render={render} toggle={toggle} />
+      function ToggleContextConsumer (props, context) {
+        return props.render(context[ToggleContextProvider.contextName])
       }
       ToggleContextConsumer.contextTypes = {
-        [ToggleContextProvider.contextName]: PropTypes.object,
+        [ToggleContextProvider.contextName]: PropTypes.object.isRequired,
       }
 
       class C1 extends React.Component {
