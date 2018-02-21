@@ -96,17 +96,25 @@
         [ToggleContextProvider.contextName]: PropTypes.object.isRequired,
       }
 
-      class C1 extends React.Component {
-        render () {
-          return (
-            <div className='container'>
-              <ToggleContextConsumer render={toggle => {
-                return <Switch on={toggle.on} onClick={toggle.toggle} />
-              }} />
-            </div>
-          )
+      const withToggle = (Component) => {
+        const Wrapper = ({innerRef, ...props}) => {
+          return <ToggleContextConsumer render={toggle => {
+            return <Component toggle={toggle} {...props} ref={innerRef} />
+          }} />
         }
+        Wrapper.propTypes = { innerRef: PropTypes.func }
+        Wrapper.displayName = `withToggle${Component.displayName || Component.name}`
+        Wrapper.WrappedComponent = Component
+        return hoistNonReactStatics(Wrapper, Component)
       }
+
+      const C1 = withToggle(({ toggle }) => {
+        return (
+          <div className='container'>
+            <Switch on={toggle.on} onClick={toggle.toggle} />
+          </div>
+        )
+      })
 
       class C2 extends React.Component {
         render () {
