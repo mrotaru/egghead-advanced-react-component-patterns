@@ -3,6 +3,7 @@
   .switch { width: 100px; height: 100px; }
   .on { background-color: green; }
   .off { background-color: red; }
+  .container { padding: 20px; margin: 20px; background-color: gray; }
   </style>
   <head>
     <script src="https://unpkg.com/react@16.0.0/umd/react.development.js"></script>
@@ -65,41 +66,70 @@
         }
       }
 
-      class App extends React.Component {
-        initialState = {
-          timesClicked: 0,
-          on: true
+      class ToggleContextProvider extends React.Component {
+        static contextName = '__toggle__'
+        state = { on: true }
+        getChildContext = () => {
+          return {
+            [ToggleContextProvider.contextName]: {
+              on: this.state.on,
+              onToggle: this.handleToggle,
+            }
+          }
         }
-        state = this.initialState
         handleToggle = () => {
-          this.setState(({on, timesClicked}) => ({
-            timesClicked: timesClicked + 1,
-            on: timesClicked >= 4 ? on : !on,
-          }))
+          this.setState(({on}) => {
+            return { on: !on }
+          })
         }
-        handleReset = (on) => {
-          this.setState(this.initialState)
+        static Renderer = ({ toggle, render }) => {
+          return <Toggle {...toggle} render={render} />
         }
+        render = () => {
+          return this.props.children
+        }
+      }
+      ToggleContextProvider.childContextTypes = {
+        [ToggleContextProvider.contextName]: PropTypes.object,
+      }
+
+      function ToggleContextConsumer ({ render }, context) {
+        const toggle = context[ToggleContextProvider.contextName]
+        return <ToggleContextProvider.Renderer render={render} toggle={toggle} />
+      }
+      ToggleContextConsumer.contextTypes = {
+        [ToggleContextProvider.contextName]: PropTypes.object,
+      }
+
+      class C1 extends React.Component {
         render () {
-          const { timesClicked, on } = this.state
           return (
-            <Toggle
-              on={on}
-              onToggle={this.handleToggle}
-              onReset={this.handleReset}
-              defaultOn={true}
-              render={toggle => (
-                <div>
-                  <Switch {...toggle.getTogglerProps({ on: toggle.on }) } />
-                  <p>{toggle.on ? 'on' : 'off'}</p>
-                  <p>{timesClicked >= 4 ? 'clicked too much !' : timesClicked}</p>
-                  <p>
-                    <button { ...{ onClick:() => toggle.reset() }}
-                    >Reset</button>
-                  </p>
-                </div>
-              )}
-            />
+            <div className='container'>
+              <ToggleContextConsumer render={toggle => {
+                return <Switch on={toggle.on} onClick={toggle.toggle} />
+              }} />
+            </div>
+          )
+        }
+      }
+
+      class C2 extends React.Component {
+        render () {
+          return <div className='container'>
+            <ToggleContextConsumer render={({on}) => {
+              return on ? 'ON' : 'OFF'
+            }} />
+          </div>
+        }
+      }
+
+      class App extends React.Component {
+        render () {
+          return (
+            <ToggleContextProvider>
+              <C1 />
+              <C2 />
+            </ToggleContextProvider>
           )
         }
       }
