@@ -13,6 +13,7 @@
     <script src="https://unpkg.com/prop-types@15.6.0/prop-types.js"></script>
     <script src="https://unpkg.com/react-broadcast@0.5.2/umd/react-broadcast.js"></script>
     <script src="https://cdn.rawgit.com/kentcdodds/ea2fdfc82f79228a6be641c78dc0e1b9/raw/0f792eb8dfb3bf993bdf50c9656f12090ed344e6/hoist-non-react-statics.umd.js"></script>
+    <script src="https://unpkg.com/redux@3.7.2/dist/redux.js"></script>
   </head>
   <body>
     <div id='root'>
@@ -22,47 +23,45 @@
 
       class Toggle extends React.Component {
         static defaultProps = {
-          defaultOn: false,
+          initialState: {},
           onReset: () => {},
-          onToggle: () => {}
+          onToggle: () => {},
+          reducer: state => state,
         }
-        initialState = {
-          on: this.props.defaultOn
-        }
-        state = this.initialState
-        toggle = () => {
-          if (this.isOnControlled()) {
-            this.props.onToggle(!this.props.on)
-          } else {
-            this.setState(
-              ({on}) => ({ on: !on }),
-              () => {
-                this.props.onToggle(this.state.on)
-              }
-            )
+        initialState = this.props.initialState
+        rootReducer = (state, action) => {
+          if (action.type === 'RESET') {
+            return this.initialState
           }
+          return this.props.reducer(state, action)
         }
+        store = Redux.createStore(
+          this.rootReducer,
+          this.initialState,
+        )
+        state = this.initialState
         reset = () => {
-          if (this.isOnControlled()) {
-            this.props.onReset(!this.props.on)
+          if (this.isStateControlled()) {
+            this.props.onReset(this.initialState)
           } else {
+            this.store.dispatch({type: 'RESET'})
             this.setState(this.initialState, () => {
               this.props.onReset(this.state.on)
             })
           }
         }
-        isOnControlled = () => this.props.on !== undefined
-        getTogglerProps = ({ onClick, ...props} = {}) => ({
-            'aria-expanded': this.state.on,
-            onClick: compose(onClick, this.toggle),
-            ...props,
-          })
+        isStateControlled = () => this.props.state !== undefined
+        componentDidMount () {
+          this.unsubscribe = this.store.subscribe(() => this.setState(this.store.getState()))
+        }
+        componentWillUnmount () {
+          this.unsubscribe()
+        }
         render = () => {
           return this.props.render({
-            on: this.isOnControlled() ? this.props.on : this.state.on,
-            toggle: this.toggle,
+            state: this.isStateControlled() ? this.props.state : this.store.getState(),
+            dispatch: this.store.dispatch,
             reset: this.reset,
-            getTogglerProps: this.getTogglerProps,
           })
         }
       }
@@ -96,13 +95,37 @@
         return hoistNonReactStatics(Wrapper, Component)
       }
 
-      const C1 = withToggle(({ toggle }) => {
+      const C1 = withToggle(({ toggle: { state, dispatch }}) => {
         return (
           <div className='container'>
-            <Switch on={toggle.on} onClick={toggle.toggle} />
+            <Switch on={state.on} onClick={() => {
+              dispatch({ type: 'TOGGLE', value: !state.on })
+            }} />
           </div>
         )
       })
+
+      const StateShower = withToggle(({ toggle: { state }}) => {
+        return <pre>{JSON.stringify(state, null, 2)}</pre>
+      })
+
+      const MyInput = () => 
+        <ToggleContextConsumer
+          render={({state, dispatch}) => (
+            <input
+              defaultValue={state.on ? 'on' : 'off'}
+              placeholder='Type "off" or "on"'
+              onChange={event => {
+                if (event.target.value === 'on') {
+                  dispatch({ type: 'TOGGLE', value: true })
+                } else if (event.target.value === 'off') {
+                  dispatch({ type: 'TOGGLE', value: false })
+                } else {
+                  dispatch({ type: 'INPUT_CHANGE', value: event.target.value })
+                }
+              }} />
+          )}
+        ></ToggleContextConsumer>
 
       class UpdateBlocker extends React.Component {
         shouldComponentUpdate () {
@@ -115,8 +138,8 @@
 
       class C2 extends React.Component {
         render = () => <div className='container'>
-            <ToggleContextConsumer render={({on}) => {
-              return on ? 'ON' : 'OFF'
+            <ToggleContextConsumer render={({state}) => {
+              return state.on ? 'ON' : 'OFF'
             }} />
           </div>
       }
@@ -124,9 +147,28 @@
       class App extends React.Component {
         render () {
           return (
-            <ToggleContextProvider>
+            <ToggleContextProvider initialState={{ on: true }}
+              reducer={(state, action) => {
+                switch (action.type) {
+                  case 'TOGGLE':
+                    return {
+                      ...state,
+                      on: action.value,
+                    }
+                  case 'INPUT_CHANGE':
+                    return {
+                      ...state,
+                      inputValue: action.value,
+                    }
+                  default:
+                    return state
+                }
+              }}
+            >
               <div>
                 <C1 />
+                <MyInput />
+                <StateShower />
                 <UpdateBlocker>
                   <C2 />
                 </UpdateBlocker>
